@@ -1,58 +1,117 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Яндекс Карты Парсер организаций и отзывов
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### Ссылка на живой проект (Production)
+Проект развернут на VPS и доступен по адресу:  
+**[http://161.104.19.178/](http://161.104.19.178/)**
 
-## About Laravel
+Парсер организаций с Яндекс.Карт с возможностью получения информации об организации (название, рейтинг, количество оценок, количество отзывов) и самих отзывов (автор, оценка, дата, текст). Данные кэшируются в локальной БД на 24 часа, что позволяет быстро получать информацию без повторного парсинга.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Особенности
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Получение данных по ссылке** – вставьте URL организации с Яндекс.Карт.
+- **Кэширование в БД** – если данные были запрошены менее суток назад, они возвращаются из базы без повторного парсинга.
+- **Парсинг отзывов** – загружаются последние 50 отзывов (максимум, доступные на странице) с пагинацией по 10 на фронтенде.
+- **Защита от блокировок** – используется подмена User-Agent, заголовки Accept-Language и Browsershot (Puppeteer) для отзывов (динамическая загрузка).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Технологии
 
-## Learning Laravel
+- **База данных:** SQLite (по умолчанию), можно использовать MySQL/PostgreSQL
+- **HTTP-клиент:** Laravel HTTP Client
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Установка и запуск локально
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
+### 1. Клонируйте или скачайте репозиторий
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/arcosgit/yndex-maps-parser
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Настройка окружения и установка зависимостей
+```bash
+cp .env.example .env
+```
+- **composer install**
+- **npm install**
 
-## Contributing
+### 3. Генерация ключа приложения
+```bash
+php artisan key:generate
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 4. Запуск миграций (создание таблиц) и запуск сервера разработки
+```bash
+php artisan migrate --seed
+```
+```bash
+php artisan serve
+```
+```bash
+npm run dev
+```
+## Подход к парсингу и обходу защиты
 
-## Code of Conduct
+### Основная информация
+Программа собирает базовые данные организации:
+* Название
+* Рейтинг
+* Количество оценок
+* Количество отзывов
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Технологический стек парсинга
+* **Symfony DomCrawler** — используется для анализа и парсинга статической HTML-страницы организации.
+* **Laravel HTTP Client** — выполняет запросы к целевому серверу. Для обхода базовых блокировок настроена подмена `User-Agent` на актуальный браузерный, а также передается заголовок `'Accept-Language': 'ru-RU'`.
+* **CSS-селекторы** — применяются для точечного извлечения данных, специфичных для структуры страниц Яндекс.Карт.
 
-## Security Vulnerabilities
+### Отзывы (динамическая загрузка)
+Отзывы подгружаются на странице асинхронно через JavaScript, поэтому простой HTTP-запрос не сможет их получить.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Для решения этой задачи используется **Browsershot** (удобная PHP-обёртка над Puppeteer и Headless Chrome).
 
-## License
+#### Алгоритм работы скрипта:
+1. **Загрузка страницы**: Скрипт открывает целевой URL с автоматическим добавлением параметра `tab=reviews`, чтобы сразу перейти на вкладку отзывов.
+2. **Ожидание контента**: Браузер ожидает появления CSS-селектора `.business-reviews-card-view__review`. Это гарантирует, что динамические отзывы полностью загрузились в DOM-дерево.
+3. **Парсинг**: После успешной подгрузки скрипт извлекает финальный HTML-код страницы и передает его в **Symfony DomCrawler** для детального разбора.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+> **Преимущество подхода**: Такая эмуляция поведения реального браузера с полноценным рендерингом JavaScript позволяет надежно обходить базовую защиту от ботов.
+
+### 3. Кэширование результатов
+* **Сохранение в БД**: После успешного парсинга все данные автоматически сохраняются в таблицы `organizations` и `organization_reviews`.
+* **Проверка актуальности**: При повторном запросе той же организации система проверяет время создания записи в базе данных.
+* **Обновление данных**: 
+  * Если с момента парсинга прошло **менее 24 часов** — данные мгновенно возвращаются из локальной БД.
+  * Если прошло **более 24 часов** — старая запись удаляется, и скрипт выполняет новый парсинг для получения свежей информации.
+
+### 4. Защита от блокировок
+Для минимизации риска блокировок со стороны целевого сервиса реализованы следующие меры:
+* **Актуальные User-Agent'ы**: Все запросы имитируют поведение современных популярных браузеров.
+* **Локализация**: Всегда передается заголовок `Accept-Language: ru-RU` для гарантированного получения русскоязычной версии страницы.
+* **Синхронизация заголовков**: Робот `Browsershot` запускается с теми же заголовками и мета-данными, что и обычные HTTP-запросы.
+* **Умное ожидание**: При сборе отзывов используется метод `waitForSelector`, что позволяет дождаться полной загрузки динамического контента без жестких и подозрительных задержек (таймаутов).
+
+### Доступ к проекту (Авторизация)
+Для тестирования системы вы можете использовать следующие демонстрационные данные:
+
+* **Логин:** `user`
+* **Пароль:** `12345678`
+
+### Пример тестовой ссылки
+Для проверки работоспособности парсера можно использовать следующую ссылку на организацию в Яндекс.Картах:
+https://yandex.ru/maps/2/saint-petersburg/?ll=30.349711%2C59.842608&mode=poi&poi%5Bpoint%5D=30.350994%2C59.842250&poi%5Buri%5D=ymapsbm1%3A%2F%2Forg%3Foid%3D1690753229&z=17.51
+
+
+
+### Известные ограничения
+* **Лимит на количество отзывов**: На данный момент технически выгружаются только **первые 50 отзывов**. Если у организации их больше, остальные на текущем этапе работы скрипта показаны не будут.
+
+### Планы по улучшению
+При наличии дополнительного времени в проект планируется внедрить следующие доработки:
+1. **Глубокий парсинг отзывов**: Реализовать бесконечную прокрутку (scroll) страницы через Puppeteer для подгрузки абсолютно всех доступных отзывов организации.
+2. **Фильтрация контента**: Добавить возможность сортировки и фильтрации отзывов на этапе сбора (например, выгрузка *только негативных* или *только положительных* оценок).
+
+
+
+
+
+
+
+
+
