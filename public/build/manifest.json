@@ -1,0 +1,51 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-BwVMm689.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "assets": [
+      "assets/Roboto-VariableFont_wdth_wght-CTnIOZTo.ttf",
+      "assets/Roboto-Italic-VariableFont_wdth_wght-gvDAkWlq.ttf"
+    ]
+  },
+  "resources/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf": {
+    "file": "assets/Roboto-Italic-VariableFont_wdth_wght-gvDAkWlq.ttf",
+    "src": "resources/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf"
+  },
+  "resources/fonts/Roboto-VariableFont_wdth,wght.ttf": {
+    "file": "assets/Roboto-VariableFont_wdth_wght-CTnIOZTo.ttf",
+    "src": "resources/fonts/Roboto-VariableFont_wdth,wght.ttf"
+  },
+  "resources/js/Pages/Auth/Index.vue": {
+    "file": "assets/Index-CH31K0V1.js",
+    "name": "Index",
+    "src": "resources/js/Pages/Auth/Index.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "resources/js/Pages/Index/Index.vue": {
+    "file": "assets/Index-CY4j0iSV.js",
+    "name": "Index",
+    "src": "resources/js/Pages/Index/Index.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-Bp7hb_Ju.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/Pages/Auth/Index.vue",
+      "resources/js/Pages/Index/Index.vue"
+    ]
+  }
+}
